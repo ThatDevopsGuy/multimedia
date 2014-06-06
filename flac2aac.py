@@ -156,6 +156,10 @@ def convert_flac_to_aac(flac_file):
         call(['flac', '-s', '-f', '-d', flac_file, '-o', wav_file])
 
         if args.lossless:
+            # TODO: Fix multi-channel audio issues, enable proper conversion:
+            # For 5.1 channel FLAC, cannot use soundcheck, must specify chanel layout:
+            # call(['afconvert', '-f', 'm4af', '-d', 'alac', '-l',  'MPEG_5_1_A', wav_file, m4a_file])
+
             call(['afconvert', '-f', 'm4af', '-d', 'alac',
                  '--soundcheck-generate', wav_file, m4a_file])
         else:
