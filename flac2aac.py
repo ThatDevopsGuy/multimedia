@@ -19,7 +19,7 @@ License:        MIT
 Description:    A script which converts FLAC files to MPEG4/AAC files and
                 copies over song metadata, utilizing Apple's CoreAudio
                 framework for better AAC support.
-Version:        2.0
+Version:        2.1 (Lossless Support)
 Requirements:
     OS:         Mac OS X, v10.5+    [afconvert]
     Platform:   Python 2.6+         [multiprocessing]
@@ -80,6 +80,8 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument('location', default=fix_path(os.curdir),
                     type=str, help='the location to search for media files [.]')
+parser.add_argument('-l', '--lossless', action="store_true", default=False,
+                    help='encode in Apple Lossless (ALAC), overrides codec options [no]')
 parser.add_argument('-q', '--quality', type=int, default=75, help='VBR quality, in percent [75]')
 parser.add_argument('-c', '--codec', choices=data_formats,
                     default='aac', help='codec to use, if available on your platform [aac]')
@@ -153,8 +155,13 @@ def convert_flac_to_aac(flac_file):
 
         call(['flac', '-s', '-f', '-d', flac_file, '-o', wav_file])
 
-        call(['afconvert', '-f', 'm4af', '-d', args.codec, '-b', str(bitrate), '--src-complexity',
-              'bats', '-s', str(vbr_mode), '-u', 'vbrq', quality, '--soundcheck-generate', wav_file, m4a_file])
+        if args.lossless:
+            call(['afconvert', '-f', 'm4af', '-d', 'alac',
+                 '--soundcheck-generate', wav_file, m4a_file])
+        else:
+            call(
+                ['afconvert', '-f', 'm4af', '-d', args.codec, '-b', str(bitrate), '--src-complexity',
+                 'bats', '-s', str(vbr_mode), '-u', 'vbrq', quality, '--soundcheck-generate', wav_file, m4a_file])
 
         m4aData = mutagen.File(m4a_file, easy=True)
         m4aData.update(metadata)
