@@ -19,7 +19,7 @@ License:        MIT
 Description:    A script which converts FLAC files to MPEG4/AAC files and
                 copies over song metadata, utilizing Apple's CoreAudio
                 framework for better AAC support.
-Version:        2.1 (Lossless Support)
+Version:        2.1.1 (Lossless Support)
 Requirements:
     OS:         Mac OS X, v10.5+    [afconvert]
     Platform:   Python 2.6+         [multiprocessing]
@@ -31,7 +31,6 @@ Requirements:
 
 import os
 import sys
-from getpass import getuser
 from shutil import rmtree
 
 # =============================================================================
@@ -115,7 +114,6 @@ else:
 # First create our output directory:
 output_location = os.path.join(args.location, 'converted_audio')
 tmp_location = '/tmp/intermediate_audio/'
-file_count = 0
 
 for loc in (output_location, tmp_location):
     if not os.path.exists(loc):
@@ -127,7 +125,7 @@ def get_flac_files(location):
     for path, dirs, files in os.walk(location):
         for f in files:
             if f.endswith('.flac') and not f.startswith('.'):
-                file_count += 1
+                print 'Got FLAC file:', f
                 yield os.path.join(path, f)
 
 
@@ -172,7 +170,7 @@ def convert_flac_to_aac(flac_file):
         m4aData.save()
         os.remove(wav_file)
 
-        print 'Converted file:', m4a_file
+        print 'Finished file:', m4a_file
 
     except KeyboardInterrupt:
         pass
@@ -181,17 +179,19 @@ def convert_flac_to_aac(flac_file):
 # Main:
 # =============================================================================
 
-print 'Processing:', args.location
+print 'Processing: %s...' % args.location
 
 try:
     pool = Pool()
     p = pool.map_async(convert_flac_to_aac, get_flac_files(args.location))
     p.get(0xFFFF)
+
 except KeyboardInterrupt:
     exit('Aborting.')
 
+# Clean-up:
 rmtree(tmp_location, ignore_errors=True)
 
-print 'Converted %s files.\n' % file_count
+print 'Done.'
 
 # EOF
