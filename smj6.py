@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 # smj6.py | The Simple Media Jukebox, version 6
-# Copyright 2010-2012 Sebastian Weigand
+# Copyright 2010-2015 Sebastian Weigand, sab@sab.systems
 # Licensed under the MIT license
-# Notes: This version introduces a permanent datastore, utilizes file metadata,
-#        and allows for a (albeit very limited) preference file.
+# Notes: This version is not as awesome as smj7!
 
 # ==============================================================================
 # Imports:

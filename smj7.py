@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 # smj7.py | The Simple Media Jukebox, version 7
-# Copyright 2010-2015 Sebastian Weigand
+# Copyright 2010-2015 Sebastian Weigand, sab@sab.systems
 # Licensed under the MIT license
 
 # ==============================================================================
