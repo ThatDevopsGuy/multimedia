@@ -11,10 +11,10 @@
 ===============================================================================
 
 Script:         flac2aac.py 
-Author:         Sebastian Weigand   www.sw-dd.com
-Email:          sab@sw-dd.com
+Author:         Sebastian Weigand
+Email:          sab@sab.systems
 Current:        February 2014
-Copyright:      2012-2014, Sebastian Weigand
+Copyright:      2012-2015, Sebastian Weigand
 License:        MIT
 Description:    A script which converts FLAC files to MPEG4/AAC files and
                 copies over song metadata, utilizing Apple's CoreAudio

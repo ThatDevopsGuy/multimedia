@@ -548,16 +548,19 @@ if __name__ == '__main__':
 
                     if artist == result['artist']:
                         if album == result['album']:
-                            print '   ', i, result['title']
+                            print '    ', i, result['title']
                         
                         else:
-                            print '\n ## ', result['album']
-                            print '   ', i, result['title']
+                            print '\n  ', result['album']
+                            print '   ' + '-' * len(result['album'])
+                            print '    ', i, result['title']
                     
                     else:
-                        print '\n#', result['artist']
-                        print '\n ##', result['album']
-                        print   '   ', i, result['title']
+                        print '\n', result['artist']
+                        print '=' * len(result['artist'])
+                        print '\n  ', result['album']
+                        print '   ' + '-' * len(result['album'])
+                        print '    ', i, result['title']
                     
                     artist = result['artist']
                     album = result['album']
