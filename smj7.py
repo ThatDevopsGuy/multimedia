@@ -67,7 +67,7 @@ parser = ArgumentParser(description='A simple command-line media indexer and juk
 parser.add_argument('-l', '--location', default=true_path('~/Music/'),
                     type=str, help='the location to search for media files [~/Music]')
 
-parser.add_argument('-Q', '--query', type=str,
+parser.add_argument('-q', '--query', type=str,
                     help='input an SMJ7-style query, followed by playlist commands, and disable interactive mode (see --syntax)')
 
 parser.add_argument('--database', default=true_path('~/.smj7.sqlite'),
@@ -81,7 +81,7 @@ parser.add_argument('--force-rescan', action="store_true", default=False,
 parser.add_argument('--json', action="store_true", default=False,
                     help='skip playback and interactive selection, just output matching results in JSON')
 
-parser.add_argument('--include_paths', action="store_true", default=False,
+parser.add_argument('--show-paths', action="store_true", default=False,
                     help='include path information in JSON track output')
 
 parser.add_argument('-i', '--indent', type=int, default=2, help='with --json, # of spaces to indent by, set to 0 to dump block of text [2]')
@@ -431,7 +431,7 @@ def playlist_handler(input_string, media_entries):
 # -------------------------------------------------------------------------------------------------
 
 
-def jsonizer(media_entries, include_paths=args.include_paths):
+def jsonizer(media_entries, show_paths=args.show_paths):
     ''' Convert track-specific media entries to artist: album: track hierarchy, in JSON. '''
 
     if args.indent == 0:
@@ -443,7 +443,7 @@ def jsonizer(media_entries, include_paths=args.include_paths):
     hierarchy = {}
 
     for media in media_entries:
-        if include_paths:
+        if show_paths:
             track = {'title': media['title'],
                      'path': media['path']
             }
