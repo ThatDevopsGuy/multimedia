@@ -211,7 +211,7 @@ def make_db():
 
 def play(media_entries):
     ''' Play given media_entries as a list of dicts as you'd get from searching. '''
-    
+
     for media in media_entries:
         print '\n--> Playing "' + media['title'] + '" off of "' + media['album'] + '" by "' + media['artist'] + '" -->\n'
 
@@ -227,7 +227,7 @@ def play(media_entries):
 
 
 def get_media_files(path):
-    ''' Using scandir's optimized walking algorithm, we can discard GNU's `find`. Only catches 
+    ''' Using scandir's optimized walking algorithm, we can discard GNU's `find`. Only catches
         potential files via filename extension, but we could validate this in the future. '''
 
     for root, dirs, files in walk(path):
@@ -238,7 +238,7 @@ def get_media_files(path):
 
 
 def get_new_media_files(path):
-    ''' Using scandir's optimized walking algorithm, we can discard GNU's `find`. Only catches 
+    ''' Using scandir's optimized walking algorithm, we can discard GNU's `find`. Only catches
         potential files via filename extension, but we could validate this in the future. '''
 
     db_time = os.stat(args.database)[8]
@@ -312,7 +312,7 @@ def index_media(location=args.location, freshen=args.freshen):
         file_getter = get_media_files
 
     before = time()
-    
+
     if args.force_serial:
         adverb = 'Serially'
         try:
@@ -320,25 +320,25 @@ def index_media(location=args.location, freshen=args.freshen):
 
         except KeyboardInterrupt:
             exit(1)
-    
+
     else:
         adverb = 'Parallely'
         pool = Pool()
         try:
             # Set the chunksize for imap_unordered to a low but doable number that is > 1 for slightly better performance:
             do_sql(insert_sql, column_data=pool.imap_unordered(parse_media_file, file_getter(location), 8), multiple=True)
-        
+
         except KeyboardInterrupt:
             pool.terminate()
             pool.join()
             exit(1)
-        
+
         else:
             pool.close()
             pool.join()
-    
+
     after = time()
-    
+
     if freshen:
         after_count = do_sql('select count(path) from media')[0][0]
         print 'Indexer: %s indexed %s newer files in %s seconds.' % (adverb, after_count - before_count, round(after - before, 2))
@@ -365,19 +365,19 @@ def search_media(input_string):
     # Break up the inputted string, get rid of whitespace, and filter it into the above categories:
     for word in input_string.split(','):
         word = word.strip()
-        
+
         if word.startswith('!'):
             genre_params.append(word[1:])
-        
+
         elif word.startswith('@'):
             artist_params.append(word[1:])
-        
+
         elif word.startswith('#'):
             album_params.append(word[1:])
-        
+
         elif word.startswith('$'):
             title_params.append(word[1:])
-        
+
         else:
             multi_params.append(word)
 
@@ -390,7 +390,7 @@ def search_media(input_string):
 
     # This logically ANDs together the OR blocks from above:
     sql = pre_sql + ' and '.join(filter(lambda x: len(x) > 2, [genre_sql, artist_sql, album_sql, title_sql, multi_sql])) + post_sql
-    
+
     # This creates the actual collection of variables for use with SQLite's "?" substitution:
     sql_params = ['%' + param + '%' for param in genre_params + artist_params + album_params + title_params + multi_params * 3]
 
@@ -413,18 +413,18 @@ def playlist_handler(input_string, media_entries):
             play(media_entries[input_string - 1:])
         else:
             print 'Enter value from 1 to %s, try again.' % len(media_entries)
-    
-    elif input_string.startswith('a'):
+
+    elif input_string.startswith('a') or input_string == '':
         play(media_entries)
-    
+
     elif input_string.startswith('r'):
         play([random_choice(media_entries)])
-    
+
     elif input_string.startswith('s'):
         # random.shuffle does it in-place:
         shuffle(media_entries)
         play(media_entries)
-    
+
     else:
         'Not a valid playlist command, try again.'
 
@@ -549,19 +549,19 @@ if __name__ == '__main__':
                     if artist == result['artist']:
                         if album == result['album']:
                             print '    ', i, result['title']
-                        
+
                         else:
                             print '\n  ', result['album']
                             print '   ' + '-' * len(result['album'])
                             print '    ', i, result['title']
-                    
+
                     else:
                         print '\n', result['artist']
                         print '=' * len(result['artist'])
                         print '\n  ', result['album']
                         print '   ' + '-' * len(result['album'])
                         print '    ', i, result['title']
-                    
+
                     artist = result['artist']
                     album = result['album']
 
