@@ -2,15 +2,55 @@
 
 Random multimedia scripts
 
+## SMJ7 Installation Instructions
+
+### OS X
+
+```
+brew install mplayer
+pip install mutagen scandir
+git clone https://github.com/swdd/multimedia.git
+./multimedia/smj7.py
+```
+
+### Linux Distributions
+
+#### Arch
+
+```
+sudo pacman -S python2-pip mplayer
+pip install mutagen scandir
+git clone https://github.com/swdd/multimedia.git
+./multimedia/smj7.py
+```
+
+#### Fedora / RedHat
+
+```
+sudo yum install mplayer python-pip
+pip install mutagen scandir
+git clone https://github.com/swdd/multimedia.git
+./multimedia/smj7.py
+```
+
+#### Ubuntu and Ubuntu Derivatives
+
+```
+sudo apt-get install mplayer python-pip
+pip install mutagen scandir
+git clone https://github.com/swdd/multimedia.git
+./multimedia/smj7.py
+```
+
 ## SMJ7-Style Syntax
 
 ### tl;dr
 
 Enjoy quick shorthand and get to your music quickly, easily, and all from the command line:
 
-* `./smj7.py -Q '@awol, #run'` : Automatically play all songs off of "Run" by "AWOLNATION"
-* `./smj7.py -Q '@decem, #live, $infanta` : Play the live version of "Infanta" by "The Decemberists"
-* `./smj7.py -Q '!electronic, !dance, !pary; s'` : Play a shuffled mix of those 3 genres
+* `./smj7.py -q '@awol, #run'` : Automatically play all songs off of "Run" by "AWOLNATION"
+* `./smj7.py -q '@decem, #live, $infanta` : Play the live version of "Infanta" by "The Decemberists"
+* `./smj7.py -q '!electronic, !dance, !party; s'` : Play a shuffled mix of those 3 genres
 
 SMJ7 supports a new syntax for chaining queries together using single-character notation.
 You can combine multiple parameters; like-type parameters will be logically ORed and
@@ -57,5 +97,5 @@ To add playlist commands, simply append a semicolon ";" to your query and follow
 
 #### Examples of SMJ7-style query plus commands:
 
-* ` ./smj7.py -Q "@rolling stones, #greatest; a"` - Plays all songs matching the query
-* ` ./smj7.py -Q "@decemberists, #live; s"`       - Plays all songs matching the query, in a random order
+* ` ./smj7.py -q "@rolling stones, #greatest; a"` - Plays all songs matching the query
+* ` ./smj7.py -q "@decemberists, #live; s"`       - Plays all songs matching the query, in a random order

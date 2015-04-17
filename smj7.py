@@ -67,10 +67,11 @@ parser = ArgumentParser(
     description='A simple command-line media indexer and jukebox.',
     epilog='Note: mplayer is required to play files.')
 
-parser.add_argument('-l', '--location',
-                    default=true_path('~/Music/'),
-                    type=str,
-                    help='the location to search for media files [~/Music]')
+parser.add_argument(
+    '-l', '--location',
+    default=true_path('~/Music/'),
+    type=str,
+    help='the location to search for media files [~/Music]')
 
 parser.add_argument(
     '-q', '--query',
@@ -105,10 +106,11 @@ parser.add_argument(
     help=
     'skip playback and interactive selection, just output matching results in JSON')
 
-parser.add_argument('--show-paths',
-                    action="store_true",
-                    default=False,
-                    help='include path information in JSON track output')
+parser.add_argument(
+    '--show-paths',
+    action="store_true",
+    default=False,
+    help='include path information in JSON track output')
 
 parser.add_argument(
     '-i', '--indent',
@@ -124,15 +126,17 @@ parser.add_argument(
     help=
     'disable parallelized media parsing, useful for slower machines or older mechanical hard disk drives')
 
-parser.add_argument('--syntax',
-                    action="store_true",
-                    default=False,
-                    help='show SMJ7-sylte syntax guide')
+parser.add_argument(
+    '--syntax',
+    action="store_true",
+    default=False,
+    help='show SMJ7-sylte syntax guide')
 
-parser.add_argument('-d', '--debug',
-                    action="store_true",
-                    default=False,
-                    help='enable debug mode')
+parser.add_argument(
+    '-d', '--debug',
+    action="store_true",
+    default=False,
+    help='enable debug mode')
 
 args = parser.parse_args()
 
@@ -189,8 +193,8 @@ s                                   - Play all matching songs, shuffled
 
 ### Examples of SMJ7-style query plus commands:
 
-./smj7.py -Q "@rolling stones, #greatest; a" - Plays all songs matching the query
-./smj7.py -Q "@decemberists, #live; s"       - Plays all songs matching the query, in a random order
+./smj7.py -q "@rolling stones, #greatest; a" - Plays all songs matching the query
+./smj7.py -q "@decemberists, #live; s"       - Plays all songs matching the query, in a random order
 
 '''
 
@@ -443,8 +447,7 @@ def search_media(input_string):
     artist_sql = '(' + ' or '.join(['artist like ?'] * len(artist_params)) + ')'
     album_sql = '(' + ' or '.join(['album like ?'] * len(album_params)) + ')'
     title_sql = '(' + ' or '.join(['title like ?'] * len(title_params)) + ')'
-    multi_sql = '(' + ' or '.join(['artist like ? or album like ? or title like ?'
-                                   ] * len(multi_params)) + ')'
+    multi_sql = '(' + ' or '.join(['artist like ? or album like ? or title like ?'] * len(multi_params)) + ')'
 
     # This logically ANDs together the OR blocks from above:
     sql = pre_sql + ' and '.join(filter(lambda x: len(x) > 2,
