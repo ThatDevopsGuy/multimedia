@@ -49,7 +49,7 @@ git clone https://github.com/swdd/multimedia.git
 Enjoy quick shorthand and get to your music quickly, easily, and all from the command line:
 
 * `./smj7.py -q '@awol, #run'` : Automatically play all songs off of "Run" by "AWOLNATION"
-* `./smj7.py -q '@decem, #live, $infanta` : Play the live version of "Infanta" by "The Decemberists"
+* `./smj7.py -q '@decem, #live, $infanta'` : Play the live version of "Infanta" by "The Decemberists"
 * `./smj7.py -q '!electronic, !dance, !party; s'` : Play a shuffled mix of those 3 genres
 
 SMJ7 supports a new syntax for chaining queries together using single-character notation.
