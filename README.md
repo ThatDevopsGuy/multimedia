@@ -5,9 +5,9 @@ Random multimedia scripts
 ## SMJ7 Auto-Generated Help
 
 ```
-% ./smj7.py -h
+% ./smj7.py -h                                                                                                                                                                                            ✹
 usage: smj7.py [-h] [-l LOCATION] [-q QUERY] [--database DATABASE] [--freshen]
-               [--force-rescan] [--json] [--show-paths] [-i INDENT]
+               [--prune] [--force-rescan] [--json] [--show-paths] [-i INDENT]
                [--force-serial] [--syntax] [-d]
 
 A simple command-line media indexer and jukebox.
@@ -21,8 +21,12 @@ optional arguments:
                         commands, and disable interactive mode (see --syntax)
   --database DATABASE   the location to store the media database
                         [~/.smj/smj7.sqlite]
-  --freshen             search for new files and scan them, and remove stale
-                        files from the database, useful when adding new albums
+  --freshen             search for new files and scan them, and update
+                        existing entries in the database, useful when adding
+                        new albums or changing metadata
+  --prune               delete entries from the database if the file no longer
+                        exists (Note: if you suspect a large amount of files,
+                        use --force-rescan instead)
   --force-rescan        nuke the database and start from scratch, useful when
                         a lot has changed since the last scan
   --json                skip playback and interactive selection, just output

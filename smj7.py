@@ -89,7 +89,14 @@ parser.add_argument(
     action="store_true",
     default=False,
     help=
-    'search for new files and scan them, and remove stale files from the database, useful when adding new albums')
+    'search for new files and scan them, and update existing entries in the database, useful when adding new albums or changing metadata')
+
+parser.add_argument(
+    '--prune',
+    action="store_true",
+    default=False,
+    help=
+    'delete entries from the database if the file no longer exists (Note: if you suspect a large amount of files, use --force-rescan instead)')
 
 parser.add_argument(
     '--force-rescan',
@@ -300,6 +307,48 @@ def get_new_media_files(path):
                 logger.debug('Found a potential newer media file: "%s"' %
                              absolute_filename)
                 yield absolute_filename
+
+
+def get_stale_entries(db_file=args.database):
+    ''' Return entries from the database only if they're not present on-disk. '''
+
+    # We aren't going to use do_sql() as we want an iterator, and don't need the Row type:
+    with sqlite3.connect(db_file) as conn:
+        conn.text_factory = str
+        curs = conn.cursor()
+
+        for row in curs.execute('select path from media'):
+            if not os.path.exists(row[0]):
+                logger.debug('Got stale entry: "%s"' % row[0])
+                yield row
+
+        curs.close()
+
+
+def remove_stale_entries(db_file=args.database):
+    ''' Look up entries in the database and ensure they exist on disk.
+        Note: If metadata was updated after the last scan, get_new_media_files() will
+              automatically rescan the file and update it in the DB. This function is used
+              when entries have been deleted from disk.
+    '''
+
+    before_count = do_sql('select count(path) from media')[0][0]
+    before = time()
+
+    # We aren't going to use do_sql() as we want an iterator, and don't need the Row type:
+    with sqlite3.connect(db_file) as conn:
+        conn.text_factory = str
+        curs = conn.cursor()
+
+        curs.executemany('delete from media where path = ?', get_stale_entries())
+    
+        conn.commit()
+        curs.close()
+
+    after = time()
+    after_count = do_sql('select count(path) from media')[0][0]
+    
+    print 'Pruner: Removed %s stale files from the databse in %s seconds.' % (before_count - after_count, round(after - before, 2))
 
 # -------------------------------------------------------------------------------------------------
 
@@ -539,6 +588,9 @@ if __name__ == '__main__':
 
         elif args.freshen:
             index_media()
+
+        if args.prune:
+            remove_stale_entries()
 
     else:
         make_db()
