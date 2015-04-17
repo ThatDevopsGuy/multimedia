@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 '''
 ===============================================================================
                    ______   ___  _____  ___    ___   ___  _____
@@ -57,13 +56,16 @@ def is_progam_valid(program):
             return True
     return False
 
+
 for program in ['flac', 'afconvert']:
     if not is_progam_valid(program):
         exit('Error: Unable to execute/find "%s" from your PATH.' % program)
 
-afconvert_help_formats = Popen(['afconvert', '-hf'], stderr=PIPE).communicate()[1]
-data_formats = [
-    format for format in ['aac', 'aace', 'aacf', 'aach', 'aacl', 'aacp'] if format in afconvert_help_formats]
+afconvert_help_formats = Popen(['afconvert', '-hf'],
+                               stderr=PIPE).communicate()[1]
+data_formats = [format
+                for format in ['aac', 'aace', 'aacf', 'aach', 'aacl', 'aacp']
+                if format in afconvert_help_formats]
 
 
 def fix_path(path):
@@ -74,19 +76,36 @@ def fix_path(path):
 # =============================================================================
 
 parser = argparse.ArgumentParser(
-    description='Converts FLAC to MPEG4/AAC via CoreAudio and transfers metadata using Mutagen.',
-    epilog='Note: Mac OS X v10.5+ is required for HE AAC (aach), and 10.7 is required for HE AAC v2 (aacp).')
+    description=
+    'Converts FLAC to MPEG4/AAC via CoreAudio and transfers metadata using Mutagen.',
+    epilog=
+    'Note: Mac OS X v10.5+ is required for HE AAC (aach), and 10.7 is required for HE AAC v2 (aacp).')
 
-parser.add_argument('location', default=fix_path(os.curdir),
-                    type=str, help='the location to search for media files [.]')
-parser.add_argument('-l', '--lossless', action="store_true", default=False,
-                    help='encode in Apple Lossless (ALAC), overrides codec options [no]')
-parser.add_argument('-q', '--quality', type=int, default=75, help='VBR quality, in percent [75]')
-parser.add_argument('-c', '--codec', choices=data_formats,
-                    default='aac', help='codec to use, if available on your platform [aac]')
-parser.add_argument('--abr', action="store_true", default=False,
+parser.add_argument('location',
+                    default=fix_path(os.curdir),
+                    type=str,
+                    help='the location to search for media files [.]')
+parser.add_argument(
+    '-l', '--lossless',
+    action="store_true",
+    default=False,
+    help='encode in Apple Lossless (ALAC), overrides codec options [no]')
+parser.add_argument('-q', '--quality',
+                    type=int,
+                    default=75,
+                    help='VBR quality, in percent [75]')
+parser.add_argument('-c', '--codec',
+                    choices=data_formats,
+                    default='aac',
+                    help='codec to use, if available on your platform [aac]')
+parser.add_argument('--abr',
+                    action="store_true",
+                    default=False,
                     help='use average bitrate, instead of variable [no]')
-parser.add_argument('--bitrate', type=int, default=256, help='average bitrate, in KB/s [256]')
+parser.add_argument('--bitrate',
+                    type=int,
+                    default=256,
+                    help='average bitrate, in KB/s [256]')
 args = parser.parse_args()
 
 # Fix up the arguments:
@@ -133,9 +152,10 @@ def convert_flac_to_aac(flac_file):
     try:
         metadata = mutagen.File(flac_file, easy=True)
 
-        validKeys = [
-            'title', 'album', 'artist', 'albumartist', 'date', 'comment', 'description', 'grouping', 'genre',
-            'copyright', 'albumsort', 'albumartistsort', 'artistsort', 'titlesort', 'composersort', 'tracknumber', 'discnumber']
+        validKeys = ['title', 'album', 'artist', 'albumartist', 'date',
+                     'comment', 'description', 'grouping', 'genre',
+                     'copyright', 'albumsort', 'albumartistsort', 'artistsort',
+                     'titlesort', 'composersort', 'tracknumber', 'discnumber']
 
         # Sometimes extraneous data will be stored within FLAC's metadata, and that
         # confuses the direct key updating methods of the Easy-branch of Mutagen,
@@ -146,10 +166,12 @@ def convert_flac_to_aac(flac_file):
                 del metadata[key]
 
         # Keep these in /tmp:
-        wav_file = os.path.join(tmp_location, os.path.basename(flac_file[:-5])) + '.wav'
+        wav_file = os.path.join(tmp_location,
+                                os.path.basename(flac_file[:-5])) + '.wav'
 
         # Final location is back where we started:
-        m4a_file = os.path.join(output_location, os.path.basename(flac_file[:-5])) + '.m4a'
+        m4a_file = os.path.join(output_location,
+                                os.path.basename(flac_file[:-5])) + '.m4a'
 
         call(['flac', '-s', '-f', '-d', flac_file, '-o', wav_file])
 
@@ -159,11 +181,12 @@ def convert_flac_to_aac(flac_file):
             # call(['afconvert', '-f', 'm4af', '-d', 'alac', '-l',  'MPEG_5_1_A', wav_file, m4a_file])
 
             call(['afconvert', '-f', 'm4af', '-d', 'alac',
-                 '--soundcheck-generate', wav_file, m4a_file])
+                  '--soundcheck-generate', wav_file, m4a_file])
         else:
-            call(
-                ['afconvert', '-f', 'm4af', '-d', args.codec, '-b', str(bitrate), '--src-complexity',
-                 'bats', '-s', str(vbr_mode), '-u', 'vbrq', quality, '--soundcheck-generate', wav_file, m4a_file])
+            call(['afconvert', '-f', 'm4af', '-d', args.codec, '-b',
+                  str(bitrate), '--src-complexity', 'bats', '-s',
+                  str(vbr_mode), '-u', 'vbrq', quality,
+                  '--soundcheck-generate', wav_file, m4a_file])
 
         m4aData = mutagen.File(m4a_file, easy=True)
         m4aData.update(metadata)
