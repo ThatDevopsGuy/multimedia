@@ -2,6 +2,43 @@
 
 Random multimedia scripts
 
+## SMJ7 Auto-Generated Help
+
+```
+% ./smj7.py -h
+usage: smj7.py [-h] [-l LOCATION] [-q QUERY] [--database DATABASE] [--freshen]
+               [--force-rescan] [--json] [--show-paths] [-i INDENT]
+               [--force-serial] [--syntax] [-d]
+
+A simple command-line media indexer and jukebox.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -l LOCATION, --location LOCATION
+                        the location to search for media files [~/Music]
+  -q QUERY, --query QUERY
+                        input an SMJ7-style query, followed by playlist
+                        commands, and disable interactive mode (see --syntax)
+  --database DATABASE   the location to store the media database
+                        [~/.smj/smj7.sqlite]
+  --freshen             search for new files and scan them, and remove stale
+                        files from the database, useful when adding new albums
+  --force-rescan        nuke the database and start from scratch, useful when
+                        a lot has changed since the last scan
+  --json                skip playback and interactive selection, just output
+                        matching results in JSON
+  --show-paths          include path information in JSON track output
+  -i INDENT, --indent INDENT
+                        with --json, # of spaces to indent by, set to 0 to
+                        dump block of text [2]
+  --force-serial        disable parallelized media parsing, useful for slower
+                        machines or older mechanical hard disk drives
+  --syntax              show SMJ7-sylte syntax guide
+  -d, --debug           enable debug mode
+
+Note: mplayer is required to play files.
+```
+
 ## SMJ7 Installation Instructions
 
 ### OS X
