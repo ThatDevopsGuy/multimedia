@@ -74,7 +74,7 @@ git clone https://github.com/swdd/multimedia.git
 ./multimedia/smj7.py
 ```
 
-#### Ubuntu and Ubuntu Derivatives
+#### Debian and Debian Derivatives
 
 ```
 sudo apt-get install mplayer python-pip
