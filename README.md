@@ -3,7 +3,7 @@
 Random multimedia scripts:
 
 * smj7.py      - A command-line music jukebox (and indexer) featuring a custom querying syntax
-* flac2aac.py  - A multi-process media converter utilizing CoreAudio to convert FLAC to AAC or ALAC
+* xyz2aac.py  - A multi-process media converter utilizing CoreAudio to convert FLAC to AAC or ALAC
 
 ## SMJ7 Auto-Generated Help
 
