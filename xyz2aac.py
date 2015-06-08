@@ -175,14 +175,14 @@ def convert_wav_to_aac(wav_file, m4a_file, lossless=args.lossless):
         call(['afconvert', '-f', 'm4af', '-d', 'alac', '--soundcheck-generate', wav_file, m4a_file])
 
     else:
-        logger.debug('Converting "%s" to a "%s"-KB/s, "%s"%% quality "%s"-M4A.' % (wav_file_name, bitrate, quality, codec))
+        logger.debug('Converting "%s" to a "%s"-B/s, "%s"%% quality "%s"-M4A.' % (wav_file_name, bitrate, quality, codec))
         call(['afconvert', '-f', 'm4af', '-d', codec, '-b',
               str(bitrate), '--src-complexity', 'bats', '-u', 'vbrq', quality,
               '--soundcheck-generate', wav_file, m4a_file])
 
 
 def convert_audio_to_aac(audio_file, m4a_file):
-    logger.debug('Converting "%s" to a "%s"-KB/s, "%s"%% quality "%s"-M4A.' % (os.path.basename(audio_file), bitrate, quality, codec))
+    logger.debug('Converting "%s" to a "%s"-B/s, "%s"%% quality "%s"-M4A.' % (os.path.basename(audio_file), bitrate, quality, codec))
     call(['afconvert', '-f', 'm4af', '-d', codec, '-b',
           str(bitrate), '--soundcheck-generate', audio_file, m4a_file])
 
