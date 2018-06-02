@@ -1,44 +1,32 @@
 #!/usr/bin/env python
 # coding: utf-8
 # smj7.py | The Simple Media Jukebox, version 7
-# Copyright 2010-2015 Sebastian Weigand, sab@sab.systems
+# Copyright 2010-2018 Sebastian Weigand, sab@sab.systems
 # Licensed under the MIT license
 
 # ==============================================================================
 # Imports:
 # ==============================================================================
 
-# Bits needed for basic functionality:
-import os
-import sys
 import logging
-
-# Datastore:
+import os
 import sqlite3
-
-# Standard bits:
+import sys
 from argparse import ArgumentParser
-from time import time, sleep
-from scandir import walk
 from itertools import imap
+from json import dumps
 from math import log10
-
-# Keep this choice separate, as it conflicts with a named variable:
+from multiprocessing import Pool
 from random import choice as random_choice
 from random import shuffle
+from subprocess import CalledProcessError, check_call
+from time import sleep, time
 
-# Sub and multi-processing:
-from subprocess import check_call, CalledProcessError
-from multiprocessing import Pool
-
-# Data exporting:
-from json import dumps
-
-# Metadata handling:
-from mutagen.easymp4 import EasyMP4 as m4
 from mutagen.easyid3 import EasyID3 as m3
+from mutagen.easymp4 import EasyMP4 as m4
 from mutagen.flac import FLAC as fl
 from mutagen.oggvorbis import OggVorbis as ov
+from scandir import walk
 
 # =================================================================================================
 # Initialization
@@ -51,7 +39,8 @@ sys.setdefaultencoding('utf8')
 logger = logging.getLogger('smj7')
 console = logging.StreamHandler()
 console.setLevel(logging.INFO)
-formatter = logging.Formatter('[%(asctime)s] | %(levelname)-8s | %(funcName)20s() | %(message)s')
+formatter = logging.Formatter(
+    '[%(asctime)s] | %(levelname)-8s | %(funcName)20s() | %(message)s')
 console.setFormatter(formatter)
 logger.addHandler(console)
 logger.setLevel(logging.INFO)
@@ -67,16 +56,19 @@ parser = ArgumentParser(
     epilog='Note: mplayer is required to play files.')
 
 parser.add_argument(
-    '-l', '--location',
+    '-l',
+    '--location',
     default=true_path('~/Music/'),
     type=str,
     help='the location to search for media files [~/Music]')
 
 parser.add_argument(
-    '-q', '--query',
+    '-q',
+    '--query',
     type=str,
     help=
-    'input an SMJ7-style query, followed by playlist commands, and disable interactive mode (see --syntax)')
+    'input an SMJ7-style query, followed by playlist commands, and disable interactive mode (see --syntax)'
+)
 
 parser.add_argument(
     '--database',
@@ -89,28 +81,32 @@ parser.add_argument(
     action="store_true",
     default=False,
     help=
-    'search for new files and scan them, and update existing entries in the database, useful when adding new albums or changing metadata')
+    'search for new files and scan them, and update existing entries in the database, useful when adding new albums or changing metadata'
+)
 
 parser.add_argument(
     '--prune',
     action="store_true",
     default=False,
     help=
-    'delete entries from the database if the file no longer exists (Note: if you suspect a large amount of files, use --force-rescan instead)')
+    'delete entries from the database if the file no longer exists (Note: if you suspect a large amount of files, use --force-rescan instead)'
+)
 
 parser.add_argument(
     '--force-rescan',
     action="store_true",
     default=False,
     help=
-    'nuke the database and start from scratch, useful when a lot has changed since the last scan')
+    'nuke the database and start from scratch, useful when a lot has changed since the last scan'
+)
 
 parser.add_argument(
     '--json',
     action="store_true",
     default=False,
     help=
-    'skip playback and interactive selection, just output matching results in JSON')
+    'skip playback and interactive selection, just output matching results in JSON'
+)
 
 parser.add_argument(
     '--show-paths',
@@ -119,18 +115,21 @@ parser.add_argument(
     help='include path information in JSON track output')
 
 parser.add_argument(
-    '-i', '--indent',
+    '-i',
+    '--indent',
     type=int,
     default=2,
     help=
-    'with --json, # of spaces to indent by, set to 0 to dump block of text [2]')
+    'with --json, # of spaces to indent by, set to 0 to dump block of text [2]'
+)
 
 parser.add_argument(
     '--force-serial',
     action="store_true",
     default=False,
     help=
-    'disable parallelized media parsing, useful for slower machines or older mechanical hard disk drives')
+    'disable parallelized media parsing, useful for slower machines or older mechanical hard disk drives'
+)
 
 parser.add_argument(
     '--syntax',
@@ -139,7 +138,8 @@ parser.add_argument(
     help='show SMJ7-sylte syntax guide')
 
 parser.add_argument(
-    '-d', '--debug',
+    '-d',
+    '--debug',
     action="store_true",
     default=False,
     help='enable debug mode')
@@ -240,7 +240,8 @@ def do_sql(query, db_file=args.database, column_data=None, multiple=False):
 
     # We don't care about overwriting values within the database:
     except sqlite3.IntegrityError:
-        logger.debug('Ignoring IntegrityError and overwriting previous values.')
+        logger.debug(
+            'Ignoring IntegrityError and overwriting previous values.')
         pass
 
     response = curs.fetchall()
@@ -249,6 +250,7 @@ def do_sql(query, db_file=args.database, column_data=None, multiple=False):
     curs.close()
 
     return response
+
 
 # -------------------------------------------------------------------------------------------------
 
@@ -259,6 +261,7 @@ def make_db():
     logger.debug('Creating new SQLite table: "%s" for database in: "%s"' %
                  (sql, args.database))
     do_sql(sql)
+
 
 # -------------------------------------------------------------------------------------------------
 
@@ -276,6 +279,7 @@ def play(media_entries):
             # This sleep helps with mplayer printing exiting stuff to stderr after we've printed our prompt:
             sleep(0.25)
             break
+
 
 # -------------------------------------------------------------------------------------------------
 
@@ -340,15 +344,18 @@ def remove_stale_entries(db_file=args.database):
         conn.text_factory = str
         curs = conn.cursor()
 
-        curs.executemany('delete from media where path = ?', get_stale_entries())
-    
+        curs.executemany('delete from media where path = ?',
+                         get_stale_entries())
+
         conn.commit()
         curs.close()
 
     after = time()
     after_count = do_sql('select count(path) from media')[0][0]
-    
-    print 'Pruner: Removed %s stale files from the databse in %s seconds.' % (before_count - after_count, round(after - before, 2))
+
+    print 'Pruner: Removed %s stale files from the databse in %s seconds.' % (
+        before_count - after_count, round(after - before, 2))
+
 
 # -------------------------------------------------------------------------------------------------
 
@@ -398,6 +405,7 @@ def parse_media_file(path):
 
     return smj_metadata
 
+
 # -------------------------------------------------------------------------------------------------
 
 # Both serial and parallel indexers use this SQL to shove data into SQLite:
@@ -418,9 +426,10 @@ def index_media(location=args.location, freshen=args.freshen):
     if args.force_serial:
         adverb = 'Serially'
         try:
-            do_sql(insert_sql,
-                   column_data=imap(parse_media_file, file_getter(location)),
-                   multiple=True)
+            do_sql(
+                insert_sql,
+                column_data=imap(parse_media_file, file_getter(location)),
+                multiple=True)
 
         except KeyboardInterrupt:
             exit(1)
@@ -430,10 +439,11 @@ def index_media(location=args.location, freshen=args.freshen):
         pool = Pool()
         try:
             # Set the chunksize for imap_unordered to a low but doable number that is > 1 for slightly better performance:
-            do_sql(insert_sql,
-                   column_data=pool.imap_unordered(parse_media_file,
-                                                   file_getter(location), 8),
-                   multiple=True)
+            do_sql(
+                insert_sql,
+                column_data=pool.imap_unordered(parse_media_file,
+                                                file_getter(location), 8),
+                multiple=True)
 
         except KeyboardInterrupt:
             pool.terminate()
@@ -451,8 +461,10 @@ def index_media(location=args.location, freshen=args.freshen):
         print 'Indexer: %s indexed %s newer files in %s seconds.' % (
             adverb, after_count - before_count, round(after - before, 2))
     else:
-        print 'Indexer: %s indexed %s files in %s seconds.' % (adverb, do_sql(
-            'select count(path) from media')[0][0], round(after - before, 2))
+        print 'Indexer: %s indexed %s files in %s seconds.' % (
+            adverb, do_sql('select count(path) from media')[0][0],
+            round(after - before, 2))
+
 
 # -------------------------------------------------------------------------------------------------
 
@@ -492,24 +504,31 @@ def search_media(input_string):
 
     # These SQL blocks logically OR same-category (same-column) parameters, and group them:
     genre_sql = '(' + ' or '.join(['genre like ?'] * len(genre_params)) + ')'
-    artist_sql = '(' + ' or '.join(['artist like ?'] * len(artist_params)) + ')'
+    artist_sql = '(' + ' or '.join(
+        ['artist like ?'] * len(artist_params)) + ')'
     album_sql = '(' + ' or '.join(['album like ?'] * len(album_params)) + ')'
     title_sql = '(' + ' or '.join(['title like ?'] * len(title_params)) + ')'
-    multi_sql = '(' + ' or '.join(['artist like ? or album like ? or title like ?'] * len(multi_params)) + ')'
+    multi_sql = '(' + ' or '.join(
+        ['artist like ? or album like ? or title like ?'
+         ] * len(multi_params)) + ')'
 
     # This logically ANDs together the OR blocks from above:
-    sql = pre_sql + ' and '.join(filter(lambda x: len(x) > 2,
-                                        [genre_sql, artist_sql, album_sql,
-                                         title_sql, multi_sql])) + post_sql
+    sql = pre_sql + ' and '.join(
+        filter(lambda x: len(x) > 2,
+               [genre_sql, artist_sql, album_sql, title_sql, multi_sql
+                ])) + post_sql
 
     # This creates the actual collection of variables for use with SQLite's "?" substitution:
-    sql_params = ['%' + param + '%' for param in genre_params + artist_params +
-                  album_params + title_params + multi_params * 3]
+    sql_params = [
+        '%' + param + '%' for param in genre_params + artist_params +
+        album_params + title_params + multi_params * 3
+    ]
 
     logger.debug('Crafted SQL statement: "%s"' % sql)
     logger.debug('Crafted SQL variables: "%s"' % sql_params)
 
     return do_sql(sql, column_data=sql_params)
+
 
 # -------------------------------------------------------------------------------------------------
 
@@ -540,6 +559,7 @@ def playlist_handler(input_string, media_entries):
     else:
         'Not a valid playlist command, try again.'
 
+
 # -------------------------------------------------------------------------------------------------
 
 
@@ -569,6 +589,7 @@ def jsonizer(media_entries, show_paths=args.show_paths):
             hierarchy[media['artist']] = {media['album']: [track]}
 
     return dumps(hierarchy, indent=json_indentation_option)
+
 
 # =================================================================================================
 # Main program logic
