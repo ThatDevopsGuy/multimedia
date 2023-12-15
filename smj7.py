@@ -1,7 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # coding: utf-8
-# smj7.py | The Simple Media Jukebox, version 7
-# Copyright 2010-2018 Sebastian Weigand, sab@sab.systems
+# smj7.py | The Simple Media Jukebox, version 7.1
+# Copyright 2010-2024 Sebastian Weigand, sab@sab.systems
 # Licensed under the MIT license
 
 # ==============================================================================
@@ -13,7 +13,8 @@ import os
 import sqlite3
 import sys
 from argparse import ArgumentParser
-from itertools import imap
+import importlib
+
 from json import dumps
 from math import log10
 from multiprocessing import Pool
@@ -31,10 +32,6 @@ from scandir import walk
 # =================================================================================================
 # Initialization
 # =================================================================================================
-
-# This sys reloading is needed to handle logger output of UTF-8 strings:
-reload(sys)
-sys.setdefaultencoding('utf8')
 
 logger = logging.getLogger('smj7')
 console = logging.StreamHandler()
@@ -151,7 +148,7 @@ if args.debug:
     console.setLevel(logging.DEBUG)
 
 if args.syntax:
-    print '''
+    print('''
 # SMJ7-Style Syntax
 
 SMJ7 supports a new syntax for chaining queries together using single-character notation.
@@ -202,7 +199,7 @@ s                                   - Play all matching songs, shuffled
 ./smj7.py -q "@rolling stones, #greatest; a" - Plays all songs matching the query
 ./smj7.py -q "@decemberists, #live; s"       - Plays all songs matching the query, in a random order
 
-'''
+''')
 
 # Fix up some parameters:
 args.location = true_path(args.location)
@@ -270,7 +267,7 @@ def play(media_entries):
     ''' Play given media_entries as a list of dicts as you'd get from searching. '''
 
     for media in media_entries:
-        print '\n--> Playing "' + media['title'] + '" off of "' + media['album'] + '" by "' + media['artist'] + '" -->\n'
+        print('\n--> Playing "' + media['title'] + '" off of "' + media['album'] + '" by "' + media['artist'] + '" -->\n')
 
         try:
             check_call(['mplayer', media['path']])
@@ -353,8 +350,8 @@ def remove_stale_entries(db_file=args.database):
     after = time()
     after_count = do_sql('select count(path) from media')[0][0]
 
-    print 'Pruner: Removed %s stale files from the databse in %s seconds.' % (
-        before_count - after_count, round(after - before, 2))
+    print('Pruner: Removed %s stale files from the databse in %s seconds.' % (
+        before_count - after_count, round(after - before, 2)))
 
 
 # -------------------------------------------------------------------------------------------------
@@ -428,7 +425,7 @@ def index_media(location=args.location, freshen=args.freshen):
         try:
             do_sql(
                 insert_sql,
-                column_data=imap(parse_media_file, file_getter(location)),
+                column_data=map(parse_media_file, file_getter(location)),
                 multiple=True)
 
         except KeyboardInterrupt:
@@ -458,12 +455,12 @@ def index_media(location=args.location, freshen=args.freshen):
 
     if freshen:
         after_count = do_sql('select count(path) from media')[0][0]
-        print 'Indexer: %s indexed %s newer files in %s seconds.' % (
-            adverb, after_count - before_count, round(after - before, 2))
+        print('Indexer: %s indexed %s newer files in %s seconds.' % (
+            adverb, after_count - before_count, round(after - before, 2)))
     else:
-        print 'Indexer: %s indexed %s files in %s seconds.' % (
+        print('Indexer: %s indexed %s files in %s seconds.' % (
             adverb, do_sql('select count(path) from media')[0][0],
-            round(after - before, 2))
+            round(after - before, 2)))
 
 
 # -------------------------------------------------------------------------------------------------
@@ -514,9 +511,8 @@ def search_media(input_string):
 
     # This logically ANDs together the OR blocks from above:
     sql = pre_sql + ' and '.join(
-        filter(lambda x: len(x) > 2,
-               [genre_sql, artist_sql, album_sql, title_sql, multi_sql
-                ])) + post_sql
+        [x for x in [genre_sql, artist_sql, album_sql, title_sql, multi_sql
+                ] if len(x) > 2]) + post_sql
 
     # This creates the actual collection of variables for use with SQLite's "?" substitution:
     sql_params = [
@@ -543,7 +539,7 @@ def playlist_handler(input_string, media_entries):
         if 0 < input_string <= len(media_entries):
             play(media_entries[input_string - 1:])
         else:
-            print 'Enter value from 1 to %s, try again.' % len(media_entries)
+            print('Enter value from 1 to %s, try again.' % len(media_entries))
 
     elif input_string.startswith('a') or input_string == '':
         play(media_entries)
@@ -619,7 +615,7 @@ if __name__ == '__main__':
 
     # If someone wants a full dump of their music collection:
     if args.json and not args.query:
-        print jsonizer(do_sql('select * from media'))
+        print(jsonizer(do_sql('select * from media')))
         exit()
 
     # For non-interactive searching:
@@ -634,7 +630,7 @@ if __name__ == '__main__':
 
         if args.json:
             # sqlite.Row objects are not JSON serializable, `dict` them here:
-            print jsonizer(results)
+            print(jsonizer(results))
             # Exit as JSON is not intended for playback:
             exit()
 
@@ -649,15 +645,15 @@ if __name__ == '__main__':
 
     count = do_sql('select count(path) from media')[0][0]
 
-    print 'For help with SMJ7-style syntax, use ./smj7.py --syntax'
-    print 'Available parameters: !genre, @artist name, #album name, $track name'
+    print('For help with SMJ7-style syntax, use ./smj7.py --syntax')
+    print('Available parameters: !genre, @artist name, #album name, $track name')
 
     while True:
         try:
             # Python 2.7 is required for: '{:,}'.format(<value>) to make it add commas to 1,000s:
-            input = raw_input('\n[SMJ7 | %s files] > ' % '{:,}'.format(count))
+            inputted = input('\n[SMJ7 | %s files] > ' % '{:,}'.format(count))
 
-            results = search_media(input)
+            results = search_media(inputted)
 
             if len(results) == 1:
                 play(results)
@@ -681,34 +677,34 @@ if __name__ == '__main__':
 
                     if artist == result['artist']:
                         if album == result['album']:
-                            print '    ', i, result['title']
+                            print('    ', i, result['title'])
 
                         else:
-                            print '\n  ', result['album']
-                            print '   ' + '-' * len(result['album'])
-                            print '    ', i, result['title']
+                            print('\n  ', result['album'])
+                            print('   ' + '-' * len(result['album']))
+                            print('    ', i, result['title'])
 
                     else:
-                        print '\n', result['artist']
-                        print '=' * len(result['artist'])
-                        print '\n  ', result['album']
-                        print '   ' + '-' * len(result['album'])
-                        print '    ', i, result['title']
+                        print('\n', result['artist'])
+                        print('=' * len(result['artist']))
+                        print('\n  ', result['album'])
+                        print('   ' + '-' * len(result['album']))
+                        print('    ', i, result['title'])
 
                     artist = result['artist']
                     album = result['album']
 
-                print '\nEnter # to play, or one of: (A)ll, (R)andom choice, or (S)huffle all'
-                choice = raw_input('\n[Play command] > ').lower()
+                print('\nEnter # to play, or one of: (A)ll, (R)andom choice, or (S)huffle all\n')
+                choice = input('[Play command] > ').lower()
                 playlist_handler(choice, results)
 
             else:
-                print 'No results found.'
+                print('No results found.')
 
         except KeyboardInterrupt:
-            print ' ...'
+            print(' ...')
             continue
 
         except EOFError:
-            print >> sys.stderr, '\nGoodbye.'
+            print('\nGoodbye.', file=sys.stderr)
             exit(0)
