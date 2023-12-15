@@ -1,0 +1,2 @@
+mutagen==1.47.0
+scandir==1.10.0
