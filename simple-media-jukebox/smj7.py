@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # coding: utf-8
 # smj7.py | The Simple Media Jukebox, version 7.1
-# Copyright 2010-2024 Sebastian Weigand, sab@sab.systems
+# Copyright 2010-2026 Sebastian Weigand, sab@sab.systems
 # Licensed under the MIT license
 
 # ==============================================================================
@@ -13,21 +13,22 @@ import os
 import sqlite3
 import sys
 from argparse import ArgumentParser
-import importlib
 
-from json import dumps
+import json
 from math import log10
 from multiprocessing import Pool
 from random import choice as random_choice
 from random import shuffle
 from subprocess import CalledProcessError, check_call
 from time import sleep, time
+from os import walk
+from shutil import which
+from typing import List, Dict, Any, Optional, Generator, Union
 
 from mutagen.easyid3 import EasyID3 as m3
 from mutagen.easymp4 import EasyMP4 as m4
 from mutagen.flac import FLAC as fl
 from mutagen.oggvorbis import OggVorbis as ov
-from scandir import walk
 
 # =================================================================================================
 # Initialization
@@ -132,7 +133,7 @@ parser.add_argument(
     '--syntax',
     action="store_true",
     default=False,
-    help='show SMJ7-sylte syntax guide')
+    help='show SMJ7-style syntax guide')
 
 parser.add_argument(
     '-d',
@@ -210,7 +211,7 @@ args.database = true_path(args.database)
 # =================================================================================================
 
 
-def do_sql(query, db_file=args.database, column_data=None, multiple=False):
+def do_sql(query: str, db_file: str = args.database, column_data: Optional[Union[tuple, List[tuple]]] = None, multiple: bool = False) -> List[sqlite3.Row]:
     ''' A simple SQLite wrapper which handles multiple execution options. '''
     conn = sqlite3.connect(db_file)
     conn.text_factory = str
@@ -220,19 +221,16 @@ def do_sql(query, db_file=args.database, column_data=None, multiple=False):
     try:
         if multiple:
             logger.debug(
-                'Received executemany SQL transaction for "%s": "%s" with variables.'
-                % (db_file, query))
+                f'Received executemany SQL transaction for "{db_file}": "{query}" with variables.')
             curs.executemany(query, column_data)
 
         elif column_data is not None:
             logger.debug(
-                'Received single variable-based SQL transaction for "%s": "%s" with variables.'
-                % (db_file, query))
+                f'Received single variable-based SQL transaction for "{db_file}": "{query}" with variables.')
             curs.execute(query, column_data)
 
         else:
-            logger.debug('Received single SQL transaction for "%s": "%s"' %
-                         (db_file, query))
+            logger.debug(f'Received single SQL transaction for "{db_file}": "{query}"')
             curs.execute(query)
 
     # We don't care about overwriting values within the database:
@@ -252,22 +250,25 @@ def do_sql(query, db_file=args.database, column_data=None, multiple=False):
 # -------------------------------------------------------------------------------------------------
 
 
-def make_db():
+def make_db() -> None:
     ''' Perform the initial DB creation, update me if metadata columns change. '''
     sql = 'create table media(title text, artist text, album text, tracknumber int, discnumber int, genre text, path text unique)'
-    logger.debug('Creating new SQLite table: "%s" for database in: "%s"' %
-                 (sql, args.database))
+    logger.debug(f'Creating new SQLite table: "{sql}" for database in: "{args.database}"')
     do_sql(sql)
 
 
 # -------------------------------------------------------------------------------------------------
 
 
-def play(media_entries):
+def play(media_entries: List[Dict[str, Any]]) -> None:
     ''' Play given media_entries as a list of dicts as you'd get from searching. '''
 
+    if not which('mplayer'):
+        print('Error: MPlayer not found in PATH.')
+        return
+
     for media in media_entries:
-        print('\n--> Playing "' + media['title'] + '" off of "' + media['album'] + '" by "' + media['artist'] + '" -->\n')
+        print(f'\n--> Playing "{media["title"]}" off of "{media["album"]}" by "{media["artist"]}" -->\n')
 
         try:
             check_call(['mplayer', media['path']])
@@ -281,36 +282,23 @@ def play(media_entries):
 # -------------------------------------------------------------------------------------------------
 
 
-def get_media_files(path):
-    ''' Using scandir's optimized walking algorithm, we can discard GNU's `find`. Only catches
-        potential files via filename extension, but we could validate this in the future. '''
-
-    for root, dirs, files in walk(path):
-        for filename in files:
-            if filename.endswith(('.m4a', '.mp3', '.ogg', '.oga', '.flac')):
-                logger.debug('Found a potential media file: "%s"' %
-                             os.path.join(root, filename))
-                yield os.path.join(root, filename)
-
-
-def get_new_media_files(path):
-    ''' Using scandir's optimized walking algorithm, we can discard GNU's `find`. Only catches
-        potential files via filename extension, but we could validate this in the future. '''
-
-    db_time = os.stat(args.database)[8]
-
-    for root, dirs, files in walk(path):
-        for filename in files:
-            absolute_filename = os.path.join(root, filename)
-            if filename.endswith(
-                ('.m4a', '.mp3', '.ogg', '.oga',
-                 '.flac')) and os.stat(absolute_filename)[8] > db_time:
-                logger.debug('Found a potential newer media file: "%s"' %
-                             absolute_filename)
-                yield absolute_filename
+def get_media_files(path: str, min_mtime: float = 0) -> Generator[str, None, None]:
+    ''' Using os.scandir for optimized walking and stat retrieval. '''
+    try:
+        with os.scandir(path) as it:
+            for entry in it:
+                if entry.is_dir(follow_symlinks=True):
+                    yield from get_media_files(entry.path, min_mtime)
+                elif entry.is_file(follow_symlinks=True):
+                    if entry.name.endswith(('.m4a', '.mp3', '.ogg', '.oga', '.flac')):
+                        if min_mtime == 0 or entry.stat().st_mtime > min_mtime:
+                            logger.debug(f'Found potential media file: "{entry.path}"')
+                            yield entry.path
+    except (PermissionError, OSError):
+        pass
 
 
-def get_stale_entries(db_file=args.database):
+def get_stale_entries(db_file: str = args.database) -> Generator[tuple, None, None]:
     ''' Return entries from the database only if they're not present on-disk. '''
 
     # We aren't going to use do_sql() as we want an iterator, and don't need the Row type:
@@ -320,13 +308,13 @@ def get_stale_entries(db_file=args.database):
 
         for row in curs.execute('select path from media'):
             if not os.path.exists(row[0]):
-                logger.debug('Got stale entry: "%s"' % row[0])
+                logger.debug(f'Got stale entry: "{row[0]}"')
                 yield row
 
         curs.close()
 
 
-def remove_stale_entries(db_file=args.database):
+def remove_stale_entries(db_file: str = args.database) -> None:
     ''' Look up entries in the database and ensure they exist on disk.
         Note: If metadata was updated after the last scan, get_new_media_files() will
               automatically rescan the file and update it in the DB. This function is used
@@ -350,57 +338,63 @@ def remove_stale_entries(db_file=args.database):
     after = time()
     after_count = do_sql('select count(path) from media')[0][0]
 
-    print('Pruner: Removed %s stale files from the databse in %s seconds.' % (
-        before_count - after_count, round(after - before, 2)))
+    print(f'Pruner: Removed {before_count - after_count} stale files from the database in {round(after - before, 2)} seconds.')
 
 
 # -------------------------------------------------------------------------------------------------
 
 
-def parse_media_file(path):
+def parse_media_file(path: str) -> Optional[Dict[str, Any]]:
     ''' Perform the parsing of media metadata, and clean it up into a more sensible format. '''
 
     filename = os.path.split(path)[1]
     filename_split = os.path.splitext(filename)
     extension = filename_split[1]
 
-    if extension == '.m4a':
-        mutagen_metadata = m4(path)
+    try:
+        if extension == '.m4a':
+            mutagen_metadata = m4(path)
 
-    elif extension == '.mp3':
-        mutagen_metadata = m3(path)
+        elif extension == '.mp3':
+            mutagen_metadata = m3(path)
 
-    elif extension in ('.oga', '.ogg'):
-        mutagen_metadata = og(path)
+        elif extension in ('.oga', '.ogg'):
+            mutagen_metadata = ov(path)
 
-    elif extension == '.flac':
-        mutagen_metadata = fl(path)
+        elif extension == '.flac':
+            mutagen_metadata = fl(path)
+        else:
+            logger.debug(f'Unsupported file extension: {extension} for path: {path}')
+            return None
 
-    # Remember, the Mutagen tag's value is a list:
-    smj_metadata = {
-        'artist': mutagen_metadata.get('artist', ['unknown artist'])[0],
-        'album': mutagen_metadata.get('album', ['unknown album'])[0],
-        'title': mutagen_metadata.get('title', [filename_split[0]])[0],
-        'genre': mutagen_metadata.get('genre', ['unknown genre'])[0],
-        'path': path
-    }
+        # Remember, the Mutagen tag's value is a list:
+        smj_metadata = {
+            'artist': mutagen_metadata.get('artist', ['unknown artist'])[0],
+            'album': mutagen_metadata.get('album', ['unknown album'])[0],
+            'title': mutagen_metadata.get('title', [filename_split[0]])[0],
+            'genre': mutagen_metadata.get('genre', ['unknown genre'])[0],
+            'path': path
+        }
 
-    # Prefer the "sort" "album artist", which won't include things like "Someone featuring So-and-So":
-    smj_metadata['artist'] = mutagen_metadata.get('albumartistsort',
-                                                  [smj_metadata['artist']])[0]
+        # Prefer the "sort" "album artist", which won't include things like "Someone featuring So-and-So":
+        smj_metadata['artist'] = mutagen_metadata.get('albumartistsort',
+                                                      [smj_metadata['artist']])[0]
 
-    # Catch very odd cases where the 'tracknumber' field is something other than a digit:
-    for number in ['tracknumber', 'discnumber']:
-        try:
-            smj_metadata[number] = int(
-                mutagen_metadata.get(number, ['0/0'])[0].split('/')[0])
+        # Catch very odd cases where the 'tracknumber' field is something other than a digit:
+        for number in ['tracknumber', 'discnumber']:
+            try:
+                smj_metadata[number] = int(
+                    mutagen_metadata.get(number, ['0/0'])[0].split('/')[0])
 
-        except ValueError:
-            smj_metadata[number] = 0
+            except ValueError:
+                smj_metadata[number] = 0
 
-    logger.debug('Parsed: %s' % str(smj_metadata))
+        logger.debug(f'Parsed: {smj_metadata}')
 
-    return smj_metadata
+        return smj_metadata
+    except Exception as e:
+        logger.error(f"Error parsing media file {path}: {e}")
+        return None
 
 
 # -------------------------------------------------------------------------------------------------
@@ -409,12 +403,13 @@ def parse_media_file(path):
 insert_sql = 'insert into media (title, artist, album, tracknumber, discnumber, genre, path) values (:title, :artist, :album, :tracknumber, :discnumber, :genre, :path)'
 
 
-def index_media(location=args.location, freshen=args.freshen):
+def index_media(location: str = args.location, freshen: bool = args.freshen) -> None:
     ''' Link the media file fetcher with the parser, and update the database. '''
 
     if freshen:
         before_count = do_sql('select count(path) from media')[0][0]
-        file_getter = get_new_media_files
+        db_mtime = os.stat(args.database).st_mtime
+        file_getter = lambda p: get_media_files(p, min_mtime=db_mtime)
     else:
         file_getter = get_media_files
 
@@ -423,9 +418,11 @@ def index_media(location=args.location, freshen=args.freshen):
     if args.force_serial:
         adverb = 'Serially'
         try:
+            # Filter out None results from parse_media_file
+            parsed_files = filter(None, map(parse_media_file, file_getter(location)))
             do_sql(
                 insert_sql,
-                column_data=map(parse_media_file, file_getter(location)),
+                column_data=list(parsed_files), # Convert map to list for executemany
                 multiple=True)
 
         except KeyboardInterrupt:
@@ -436,10 +433,12 @@ def index_media(location=args.location, freshen=args.freshen):
         pool = Pool()
         try:
             # Set the chunksize for imap_unordered to a low but doable number that is > 1 for slightly better performance:
+            # Filter out None results from parse_media_file
+            parsed_files = filter(None, pool.imap_unordered(parse_media_file,
+                                                file_getter(location), 8))
             do_sql(
                 insert_sql,
-                column_data=pool.imap_unordered(parse_media_file,
-                                                file_getter(location), 8),
+                column_data=list(parsed_files), # Convert imap_unordered to list for executemany
                 multiple=True)
 
         except KeyboardInterrupt:
@@ -455,18 +454,15 @@ def index_media(location=args.location, freshen=args.freshen):
 
     if freshen:
         after_count = do_sql('select count(path) from media')[0][0]
-        print('Indexer: %s indexed %s newer files in %s seconds.' % (
-            adverb, after_count - before_count, round(after - before, 2)))
+        print(f'Indexer: {adverb} indexed {after_count - before_count} newer files in {round(after - before, 2)} seconds.')
     else:
-        print('Indexer: %s indexed %s files in %s seconds.' % (
-            adverb, do_sql('select count(path) from media')[0][0],
-            round(after - before, 2)))
+        print(f'Indexer: {adverb} indexed {do_sql("select count(path) from media")[0][0]} files in {round(after - before, 2)} seconds.')
 
 
 # -------------------------------------------------------------------------------------------------
 
 
-def search_media(input_string):
+def search_media(input_string: str) -> List[sqlite3.Row]:
     ''' Parse the SMJ7-style syntax, create the requisite SQL, and execute it. '''
 
     pre_sql = 'select * from media where '
@@ -474,11 +470,11 @@ def search_media(input_string):
     post_sql = ' order by artist, album, discnumber, tracknumber'
 
     # These will store the different columns we'll be searching:
-    genre_params = []
-    artist_params = []
-    album_params = []
-    title_params = []
-    multi_params = []
+    genre_params: List[str] = []
+    artist_params: List[str] = []
+    album_params: List[str] = []
+    title_params: List[str] = []
+    multi_params: List[str] = []
 
     # Break up the inputted string, get rid of whitespace, and filter it into the above categories:
     for word in input_string.split(','):
@@ -520,8 +516,8 @@ def search_media(input_string):
         album_params + title_params + multi_params * 3
     ]
 
-    logger.debug('Crafted SQL statement: "%s"' % sql)
-    logger.debug('Crafted SQL variables: "%s"' % sql_params)
+    logger.debug(f'Crafted SQL statement: "{sql}"')
+    logger.debug(f'Crafted SQL variables: "{sql_params}"')
 
     return do_sql(sql, column_data=sql_params)
 
@@ -529,17 +525,17 @@ def search_media(input_string):
 # -------------------------------------------------------------------------------------------------
 
 
-def playlist_handler(input_string, media_entries):
+def playlist_handler(input_string: str, media_entries: List[Dict[str, Any]]) -> None:
     ''' Handle the commands needed to generate a playlist. '''
 
     input_string = input_string.strip()
 
     if input_string.isdigit():
-        input_string = int(input_string)
-        if 0 < input_string <= len(media_entries):
-            play(media_entries[input_string - 1:])
+        input_string_int = int(input_string)
+        if 0 < input_string_int <= len(media_entries):
+            play(media_entries[input_string_int - 1:])
         else:
-            print('Enter value from 1 to %s, try again.' % len(media_entries))
+            print(f'Enter value from 1 to {len(media_entries)}, try again.')
 
     elif input_string.startswith('a') or input_string == '':
         play(media_entries)
@@ -553,13 +549,13 @@ def playlist_handler(input_string, media_entries):
         play(media_entries)
 
     else:
-        'Not a valid playlist command, try again.'
+        print('Not a valid playlist command, try again.')
 
 
 # -------------------------------------------------------------------------------------------------
 
 
-def jsonizer(media_entries, show_paths=args.show_paths):
+def jsonizer(media_entries: List[sqlite3.Row], show_paths: bool = args.show_paths) -> str:
     ''' Convert track-specific media entries to artist: album: track hierarchy, in JSON. '''
 
     if args.indent == 0:
@@ -568,11 +564,12 @@ def jsonizer(media_entries, show_paths=args.show_paths):
     else:
         json_indentation_option = args.indent
 
-    hierarchy = {}
+    hierarchy: Dict[str, Dict[str, List[Union[str, Dict[str, str]]]]] = {}
 
-    for media in media_entries:
+    for media_row in media_entries:
+        media = dict(media_row) # Convert sqlite3.Row to dict
         if show_paths:
-            track = {'title': media['title'], 'path': media['path']}
+            track: Union[str, Dict[str, str]] = {'title': media['title'], 'path': media['path']}
         else:
             track = media['title']
 
@@ -584,7 +581,7 @@ def jsonizer(media_entries, show_paths=args.show_paths):
         else:
             hierarchy[media['artist']] = {media['album']: [track]}
 
-    return dumps(hierarchy, indent=json_indentation_option)
+    return json.dumps(hierarchy, indent=json_indentation_option)
 
 
 # =================================================================================================
@@ -594,7 +591,7 @@ def jsonizer(media_entries, show_paths=args.show_paths):
 if __name__ == '__main__':
 
     if not os.path.exists(args.location):
-        exit('Cannot scan a nonexistent path: "%s"' % args.location)
+        exit(f'Cannot scan a nonexistent path: "{args.location}"')
 
     if os.path.exists(args.database):
         if args.force_rescan:
@@ -635,7 +632,8 @@ if __name__ == '__main__':
             exit()
 
         # Finally kick off the results and playlist command for playback:
-        playlist_handler(command, results)
+        # Convert sqlite3.Row objects to dicts for playlist_handler
+        playlist_handler(command, [dict(row) for row in results])
         # Exit otherwise we will fall through to interactive mode:
         exit()
 
@@ -651,12 +649,12 @@ if __name__ == '__main__':
     while True:
         try:
             # Python 2.7 is required for: '{:,}'.format(<value>) to make it add commas to 1,000s:
-            inputted = input('\n[SMJ7 | %s files] > ' % '{:,}'.format(count))
+            inputted = input(f'\n[SMJ7 | {count:,} files] > ')
 
             results = search_media(inputted)
 
             if len(results) == 1:
-                play(results)
+                play([dict(results[0])]) # Convert sqlite3.Row to dict for play()
 
             elif len(results) > 1:
 
@@ -670,33 +668,36 @@ if __name__ == '__main__':
                         [2] Track 2
                 '''
 
-                for i, result in enumerate(results):
+                # Convert results to list of dicts for easier access
+                results_dicts = [dict(row) for row in results]
+
+                for i, result in enumerate(results_dicts):
                     # Pad out the number so all of them line up:
-                    i = '[ ' + str(i + 1).rjust(int(log10(len(results))) +
+                    i_str = '[ ' + str(i + 1).rjust(int(log10(len(results_dicts))) +
                                                 1) + ' ]'
 
                     if artist == result['artist']:
                         if album == result['album']:
-                            print('    ', i, result['title'])
+                            print('    ', i_str, result['title'])
 
                         else:
                             print('\n  ', result['album'])
                             print('   ' + '-' * len(result['album']))
-                            print('    ', i, result['title'])
+                            print('    ', i_str, result['title'])
 
                     else:
                         print('\n', result['artist'])
                         print('=' * len(result['artist']))
                         print('\n  ', result['album'])
                         print('   ' + '-' * len(result['album']))
-                        print('    ', i, result['title'])
+                        print('    ', i_str, result['title'])
 
                     artist = result['artist']
                     album = result['album']
 
                 print('\nEnter # to play, or one of: (A)ll, (R)andom choice, or (S)huffle all\n')
                 choice = input('[Play command] > ').lower()
-                playlist_handler(choice, results)
+                playlist_handler(choice, results_dicts)
 
             else:
                 print('No results found.')

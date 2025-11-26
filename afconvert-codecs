@@ -1,0 +1,76 @@
+Audio file and data formats:
+    '3gpp' = 3GP Audio (.3gp, .3gpp)
+               data_formats: 'aac ' 'aace' 'aacf' 'aacg' 'aach' 'aacl'
+                             'aacp' 'samr' 'sawb'
+    '3gp2' = 3GPP-2 Audio (.3g2, .3gp2)
+               data_formats: 'aac ' 'aace' 'aacf' 'aacg' 'aach' 'aacl'
+                             'aacp' 'samr' 'sawb'
+    'adts' = AAC ADTS (.aac, .adts)
+               data_formats: 'aac ' 'aach' 'aacp'
+    'ac-3' = AC3 (.ac3)
+               data_formats: 'ac-3'
+    'AIFC' = AIFC (.aifc, .aiff, .aif)
+               data_formats: I8 BEI16 BEI24 BEI32 BEF32 BEF64 UI8 'ulaw'
+                             'alaw' 'MAC3' 'MAC6' 'ima4' 'QDMC' 'QDM2'
+                             'Qclp' 'agsm' '.mp2'
+    'AIFF' = AIFF (.aiff, .aif)
+               data_formats: I8 BEI16 BEI24 BEI32
+    'amrf' = AMR (.amr, .awb)
+               data_formats: 'samr' 'sawb'
+    'm4af' = Apple MPEG-4 Audio (.m4a, .m4r)
+               data_formats: '.mp1' '.mp2' '.mp3' 'aac ' 'aace' 'aacf'
+                             'aacg' 'aach' 'aacl' 'aacp' 'ac-3' 'alac'
+                             'ec-3' 'flac' 'paac' 'pac3' 'pec3'
+    'm4bf' = Apple MPEG-4 AudioBooks (.m4b)
+               data_formats: 'aac ' 'aace' 'aacf' 'aacg' 'aach' 'aacl'
+                             'aacp' 'paac'
+    'caff' = CAF (.caf, .caff)
+               data_formats: '.mp1' '.mp2' '.mp3' 'aac ' 'aace' 'aacf'
+                             'aacg' 'aach' 'aacl' 'aacp' 'ac-3' 'alac'
+                             'alaw' 'apac' 'dvi8' 'ec-3' 'flac' 'ilbc'
+                             'ima4' I8 BEI16 BEI24 BEI32 BEF32 BEF64 LEI16
+                             LEI24 LEI32 LEF32 LEF64 'ms\x00\x02' 'ms\x00\x11'
+                             'ms\x001' 'opus' 'paac' 'pac3' 'pach' 'pacp'
+                             'pec3' 'pusa' 'qaac' 'qac3' 'qach' 'qacp'
+                             'qapc' 'qec3' 'qflc' 'qlac' 'qusa' 'samr'
+                             'sawb' 'ulaw' 'usac' 'vorb' 'zaac' 'zac3'
+                             'zach' 'zacp' 'zec3' 'zlac'
+    'ec-3' = EC3 (.ec3, .eac3)
+               data_formats: 'ec-3'
+    'flac' = FLAC (.flac)
+               data_formats: 'flac'
+    'loas' = LATM/LOAS (.loas, .latm, .xhe)
+               data_formats: '.mp1' '.mp2' 'aac ' 'aace' 'aacf' 'aacg'
+                             'aach' 'aacl' 'aacp' 'usac'
+    'MPG1' = MPEG Layer 1 (.mp1, .mpeg, .mpa, .m1a, .m2a)
+               data_formats: '.mp1'
+    'MPG2' = MPEG Layer 2 (.mp2, .mpeg, .mpa, .m1a, .m2a)
+               data_formats: '.mp2'
+    'MPG3' = MPEG Layer 3 (.mp3, .mpeg, .mpa, .m1a, .m2a)
+               data_formats: '.mp3'
+    'mp4f' = MPEG-4 Audio (.mp4, .mpg4)
+               data_formats: '.mp1' '.mp2' '.mp3' 'aac ' 'aace' 'aacf'
+                             'aacg' 'aach' 'aacl' 'aacp' 'ac-3' 'alac'
+                             'apac' 'ec-3' 'flac' LEF32 BEF32 LEF64 BEF64
+                             LEI32 BEI32 UI0 UI0 UI0 UI0 'opus' 'paac'
+                             'pac3' 'pach' 'pacp' 'pec3' 'pusa' 'qaac'
+                             'qac3' 'qach' 'qacp' 'qapc' 'qec3' 'qflc'
+                             'qlac' 'qusa' 'usac'
+    'NeXT' = NeXT/Sun (.snd, .au)
+               data_formats: I8 BEI16 BEI24 BEI32 BEF32 BEF64 'ulaw' 'alaw'
+    'Oggf' = Ogg (.opus, .ogg, .oga)
+               data_formats: 'flac' 'opus' 'vorb'
+    'Sd2f' = Sound Designer II (.sd2)
+               data_formats: I8 BEI16 BEI24 BEI32
+    'WAVE' = WAVE (.wav)
+               data_formats: UI8 LEI16 LEI24 LEI32 LEF32 LEF64 'ulaw'
+                             'alaw' 'ms\x00\x11' 'ms\x00\x02' 'ms\x001'
+    'BW64' = WAVE (BW64 for length over 4 GB) (.wav)
+               data_formats: UI8 LEI16 LEI24 LEI32 LEF32 LEF64 'ulaw'
+                             'alaw' 'ms\x00\x11' 'ms\x00\x02' 'ms\x001'
+    'RF64' = WAVE (RF64 for length over 4 GB) (.wav)
+               data_formats: UI8 LEI16 LEI24 LEI32 LEF32 LEF64 'ulaw'
+                             'alaw' 'ms\x00\x11' 'ms\x00\x02' 'ms\x001'
+    'W64f' = Wave64 (.w64)
+               data_formats: UI8 LEI16 LEI24 LEI32 LEF32 LEF64 'ulaw'
+                             'alaw' 'ms\x00\x11' 'ms\x00\x02' 'ms\x001'
