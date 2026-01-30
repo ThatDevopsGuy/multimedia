@@ -1,0 +1,14 @@
+# Binaries
+smj-go
+smj-go-static
+
+# Database
+*.sqlite
+*.bleve/
+
+# IDEs
+.idea/
+.vscode/
+
+# OS generated files
+.DS_Store
