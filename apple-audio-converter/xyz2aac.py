@@ -9,9 +9,9 @@ Current:        January 2026
 Copyright:      2012-2026, Sebastian Weigand
 License:        MIT
 Description:    A script which converts various audio files to MPEG4/AAC files and
-                copies over song metadata, utilizing Apple's CoreAudio
+                copies over song metadata, utilizing Apple's CoreAudio (or ffmpeg)
                 framework for better AAC quality and speed.
-Version:        2.3.1 (Multiple Input Processing)
+Version:        3.0 (Multiple Input Processing)
 Requirements:
     OS:         Mac OS X, v10.5+    [afconvert]
     Platform:   Python 3.8+         [multiprocessing]
